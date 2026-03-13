@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roblox Asset Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #09090f;
+    --surface: #0f1118;
+    --card: #14171f;
+    --card-hover: #191d27;
+    --border: #1e2235;
+    --border-bright: #2a304a;
+    --accent: #3b82f6;
+    --accent-dim: rgba(59,130,246,0.12);
+    --accent-bright: #60a5fa;
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.1);
+    --coral: #f97316;
+    --coral-dim: rgba(249,115,22,0.1);
+    --text: #e2e8f4;
+    --text-muted: #64748b;
+    --text-faint: #374155;
+    --id-color: #93c5fd;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Figtree', system-ui, sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  html { font-size: 14px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white; letter-spacing: -0.5px;
+  }
+  .logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 2px; }
+
+  .tab-nav { display: flex; gap: 4px; }
+  .tab-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-family: var(--sans); font-size: 13px; font-weight: 500;
+    padding: 6px 14px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--surface); }
+  .tab-btn.active { color: var(--text); background: var(--surface); }
+  .tab-btn.active::before {
+    content: ''; display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .fav-badge {
+    background: var(--accent); color: white;
+    font-size: 10px; font-weight: 600; font-family: var(--mono);
+    padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center;
+  }
+
+  /* ── Search area ── */
+  .search-area { padding: 24px 0 16px; }
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .search-wrap {
+    flex: 1; position: relative;
+  }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); pointer-events: none;
+    width: 16px; height: 16px;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 14px;
+    padding: 11px 16px 11px 40px;
+    border-radius: var(--radius); outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { border-color: var(--accent); }
+  .search-btn {
+    background: var(--accent); color: white; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 14px; font-weight: 600;
+    padding: 11px 22px; border-radius: var(--radius);
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { opacity: 0.85; }
+  .search-btn:active { opacity: 0.7; }
+
+  /* ── Type filters ── */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-chip {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-muted); font-family: var(--sans); font-size: 12px; font-weight: 500;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+  }
+  .filter-chip:hover { border-color: var(--border-bright); color: var(--text); }
+  .filter-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-bright); }
+
+  /* ── Status bar ── */
+  .status-bar {
+    padding: 10px 0 4px;
+    font-size: 12px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.live { background: var(--green); box-shadow: 0 0 0 2px var(--green-dim); }
+  .status-dot.fallback { background: var(--amber); box-shadow: 0 0 0 2px var(--amber-dim); }
+  .status-dot.idle { background: var(--text-faint); }
+
+  /* ── Results grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    padding-bottom: 40px;
+  }
+
+  /* ── Asset card ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    cursor: default;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: var(--border-bright); background: var(--card-hover); transform: translateY(-1px); }
+
+  .card-thumb {
+    aspect-ratio: 1;
+    background: var(--surface);
+    position: relative; overflow: hidden;
+  }
+  .card-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .thumb-fallback {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px;
+    background: var(--surface);
+  }
+  .type-pill {
+    position: absolute; top: 8px; left: 8px;
+    font-size: 10px; font-weight: 600; font-family: var(--mono);
+    padding: 2px 7px; border-radius: 4px; letter-spacing: 0.02em;
+    text-transform: uppercase;
+    backdrop-filter: blur(4px);
+  }
+  .type-emotes   { background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+  .type-bundles  { background: rgba(167,139,250,0.2); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+  .type-faces    { background: rgba(251,146,60,0.2); color: #fdba74; border: 1px solid rgba(251,146,60,0.3); }
+
+  .fav-star-btn {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted); font-size: 14px;
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .fav-star-btn:hover { background: rgba(245,158,11,0.2); color: var(--amber); border-color: var(--amber); }
+  .fav-star-btn.active { background: rgba(245,158,11,0.15); color: var(--amber); border-color: rgba(245,158,11,0.5); }
+
+  .card-body { padding: 10px 12px 0; flex: 1; }
+  .card-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+  .card-id-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .id-label { font-size: 10px; font-weight: 600; color: var(--text-faint); font-family: var(--mono); letter-spacing: 0.05em; }
+  .id-value {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--id-color); background: rgba(147,197,253,0.06);
+    padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(147,197,253,0.12);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+  }
+
+  .card-actions { display: flex; gap: 5px; padding: 0 10px 10px; }
+  .action-btn {
+    flex: 1; border: none; cursor: pointer; font-family: var(--sans);
+    font-size: 11px; font-weight: 600; border-radius: 6px;
+    padding: 7px 4px; transition: all 0.15s; text-align: center;
+  }
+  .btn-copy { background: var(--accent-dim); color: var(--accent-bright); border: 1px solid rgba(59,130,246,0.25); }
+  .btn-copy:hover { background: var(--accent); color: white; }
+  .btn-copy.copied { background: var(--green-dim); color: var(--green); border-color: rgba(34,197,94,0.3); }
+  .btn-open { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); flex: 0 0 auto; width: 32px; }
+  .btn-open:hover { color: var(--text); border-color: var(--border-bright); }
+
+  /* ── Skeleton ── */
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  .skeleton-box {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--card-hover) 50%, var(--surface) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+  }
+
+  /* ── Empty state ── */
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); opacity: 0.5; }
+  .empty-desc { font-size: 13px; opacity: 0.6; }
+
+  /* ── CORS notice ── */
+  .notice {
+    background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.2);
+    border-radius: var(--radius); padding: 12px 16px;
+    margin-bottom: 16px; font-size: 12px; color: #fde68a;
+    display: none; line-height: 1.6;
+  }
+  .notice a { color: var(--amber); text-decoration: underline; }
+  .notice code { font-family: var(--mono); background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 3px; }
+
+  /* ── Favorites count ── */
+  .fav-header { padding: 4px 0 16px; font-size: 12px; color: var(--text-muted); }
+  .fav-header span { color: var(--text); font-weight: 600; }
+
+  /* ── Error toast ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card); border: 1px solid var(--border-bright);
+    color: var(--text); font-size: 13px; font-weight: 500;
+    padding: 10px 18px; border-radius: var(--radius);
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.2s; pointer-events: none;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">R</div>
+      <div>
+        <span class="logo-text">Asset Finder</span>
+        <span class="logo-sub">Roblox Production Tool</span>
+      </div>
+    </div>
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('search')" id="tab-search">Search</button>
+      <button class="tab-btn" onclick="switchTab('favorites')" id="tab-favorites">
+        Favorites
+        <span class="fav-badge" id="fav-badge" style="display:none">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Search Panel -->
+  <div id="panel-search">
+    <div class="search-area">
+      <div class="search-row">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="6.5" cy="6.5" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/>
+          </svg>
+          <input class="search-input" type="text" id="search-input"
+            placeholder="Search emotes, bundles, faces..." autocomplete="off"
+            onkeydown="if(event.key==='Enter')doSearch()">
+        </div>
+        <button class="search-btn" onclick="doSearch()">Search</button>
+      </div>
+
+      <div class="filters">
+        <button class="filter-chip active" onclick="setType('all',this)">All Types</button>
+        <button class="filter-chip" onclick="setType('emotes',this)">🕺 Emotes</button>
+        <button class="filter-chip" onclick="setType('bundles',this)">👤 Bundles</button>
+        <button class="filter-chip" onclick="setType('faces',this)">😊 Faces</button>
+      </div>
+    </div>
+
+    <div class="notice" id="notice">
+      <strong>⚠ API mode:</strong> Using fallback CORS proxy. For best results, run the local proxy:
+      <code>python proxy.py</code> then reload. Results may be limited.
+      <a href="#" onclick="toggleNotice()">dismiss</a>
+    </div>
+
+    <div class="status-bar" id="status-bar" style="display:none">
+      <div class="status-dot idle" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+
+    <div class="grid" id="results-grid">
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Search for assets</div>
+        <div class="empty-desc">Type a name above to find emotes, bundles, and faces</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Favorites Panel -->
+  <div id="panel-favorites" style="display:none; padding-top: 24px;">
+    <div class="fav-header" id="fav-header"><span>0</span> saved assets</div>
+    <div class="grid" id="fav-grid">
+      <div class="empty">
+        <div class="empty-icon">★</div>
+        <div class="empty-title">No favorites yet</div>
+        <div class="empty-desc">Click the star on any asset to save it here</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let activeType = 'all';
+let activeTab = 'search';
+let favorites = JSON.parse(localStorage.getItem('roblox_favorites') || '{}');
+let copiedId = null;
+
+// ── API Config ─────────────────────────────────────────────────────────────
+const LOCAL_PROXY = '';  // empty = use relative path (works both local and on Render)
+const CORS_PROXY  = 'https://corsproxy.io/?';
+let apiMode = 'unknown';
+
+async function apiFetch(url) {
+  // 1. Try same-origin proxy (works locally via proxy.py and on Render)
+  try {
+    const r = await fetch(`/proxy?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
+    if (r.ok) { apiMode = 'local'; return r.json(); }
+  } catch (_) {}
+
+  // 2. Try CORS proxy fallback
+  try {
+    const r = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
+    if (r.ok) { apiMode = 'proxy'; showNotice(); return r.json(); }
+  } catch (_) {}
+
+  apiMode = 'fallback';
+  showNotice();
+  return null;
+}
+
+// ── Asset type definitions ─────────────────────────────────────────────────
+// Roblox assetType values:
+// 18 = Face, 42 = FaceAccessory, 17 = Head
+// 24 = Animation, 61 = Emote, 48 = ClimbAnim, 50 = FallAnim, 52 = JumpAnim, 54 = RunAnim, 56 = SwimAnim, 64 = WalkAnim
+// itemType 2 = Bundle
+const FACE_TYPES   = new Set([17, 18, 42]);
+const EMOTE_TYPES  = new Set([24, 48, 50, 51, 52, 53, 54, 55, 56, 61, 64, 68]);
+
+const TYPE_EMOJI = { emotes: '🕺', bundles: '👤', faces: '😊' };
+
+const FALLBACK_DATA = [
+  {id:3576521776, name:'Zombie Walk',          type:'emotes'},
+  {id:507768793,  name:'Robot',                type:'emotes'},
+  {id:507770239,  name:'Tilt',                 type:'emotes'},
+  {id:3337007277, name:'Shrug',                type:'emotes'},
+  {id:3365227533, name:'Point',                type:'emotes'},
+  {id:192819,     name:'Superhero Bundle',     type:'bundles'},
+  {id:39111885,   name:'Woman Bundle',         type:'bundles'},
+  {id:1227602703, name:'Classic Smile',        type:'faces'},
+  {id:6444284109, name:'Suspicious Face',      type:'faces'},
+  {id:4946632988, name:'Shocked Face',         type:'faces'},
+];
+
+// ── Search ─────────────────────────────────────────────────────────────────
+const MIN_RESULTS = 20;
+
+function buildSearchUrl(keyword, cursor, sortType) {
+  if (sortType === undefined) sortType = 0;
+  let url = `https://catalog.roblox.com/v1/search/items/details?keyword=${encodeURIComponent(keyword)}&limit=30&sortType=${sortType}&salesTypeFilter=1`;
+  if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+  return url;
+}
+
+async function fetchAllPages(keyword, maxPages, sortType) {
+  if (maxPages === undefined) maxPages = 3;
+  if (sortType === undefined) sortType = 0;
+  let items = [];
+  let cursor = "";
+  for (let page = 0; page < maxPages; page++) {
+    const data = await apiFetch(buildSearchUrl(keyword, cursor, sortType));
+    if (!data || !data.data) break;
+    items = items.concat(parseItems(data));
+    cursor = data.nextPageCursor || "";
+    if (!cursor) break;
+  }
+  return items;
+}
+
+
+
+function parseItems(data) {
+  if (!data || !data.data) return [];
+  return data.data.map(item => ({
+    id: item.id,
+    name: item.name,
+    type: detectType(item),
+    itemType: item.itemType,
+    assetType: item.assetType,
+  }));
+}
+
+function dedup(arr) {
+  const seen = new Set();
+  return arr.filter(i => { if (seen.has(i.id)) return false; seen.add(i.id); return true; });
+}
+
+// Generate broader search terms from a query
+function broaderTerms(query) {
+  const terms = [];
+  // Truncated versions (progressively shorter)
+  if (query.length > 4) terms.push(query.slice(0, Math.ceil(query.length * 0.7)));
+  if (query.length > 6) terms.push(query.slice(0, 4));
+  // Split multi-word: "happy face" → ["happy", "face"]
+  const words = query.split(/\s+/).filter(w => w.length > 2);
+  words.forEach(w => { if (w !== query) terms.push(w); });
+  return [...new Set(terms)];
+}
+
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+
+  setStatus('searching');
+  showResults([...Array(8)].map(() => ({ skeleton: true })));
+
+  // Auto-append type suffix when filter is active (e.g. "happy" + "face" = way more results)
+  const TYPE_SUFFIX = { faces: 'face' };
+  const suffix = TYPE_SUFFIX[activeType];
+  const searchQuery = (suffix && !query.toLowerCase().includes(suffix))
+    ? `${query} ${suffix}`
+    : query;
+
+  // 1. Primary search — up to 3 pages (up to 90 results)
+  let items = await fetchAllPages(searchQuery, 10);
+
+  if (items.length === 0 && apiMode === 'fallback') {
+    // API failed — use fallback demo data
+    let fb = FALLBACK_DATA.filter(a => {
+      const matchType = activeType === 'all' || a.type === activeType;
+      const matchQ = a.name.toLowerCase().includes(query.toLowerCase());
+      return matchType && matchQ;
+    });
+    if (fb.length === 0) fb = FALLBACK_DATA.filter(a => activeType === 'all' || a.type === activeType).slice(0, 10);
+    setStatus('fallback', `${fb.length} demo results`);
+    showResults(fb);
+    return;
+  }
+
+  // 2. If still fewer than MIN_RESULTS, do broader searches in parallel
+  if (items.length < MIN_RESULTS) {
+    const extras = broaderTerms(searchQuery);
+    const extraItems = await Promise.all(extras.map(t => fetchAllPages(t, 2)));
+    extraItems.forEach(arr => { items = items.concat(arr); });
+    items = dedup(items);
+  }
+
+  // 3. Client-side type filter
+  if (activeType === 'emotes' || activeType === 'faces' || activeType === 'bundles') {
+    items = items.filter(i => i.type === activeType);
+  }
+
+  if (items.length === 0) {
+    setStatus('live', 'No results for this filter');
+    showResults([]);
+    return;
+  }
+
+  setStatus('live', `${items.length} results`);
+  showResults(items);
+  await loadThumbnails(items);
+}
+
+function detectType(item) {
+  if (item.itemType === 2 || item.itemType === '2' || String(item.itemType) === '2') return 'bundles';
+  if (FACE_TYPES.has(item.assetType)) return 'faces';
+  if (EMOTE_TYPES.has(item.assetType)) return 'emotes';
+  // Bundles sometimes come with itemType=Bundle as string
+  if (item.itemType === 'Bundle') return 'bundles';
+  return 'other';
+}
+
+async function loadThumbnails(items) {
+  const bundles = items.filter(i => i.type === 'bundles');
+  const assets  = items.filter(i => i.type !== 'bundles');
+  const BATCH = 10;
+
+  function patchImage(id, url) {
+    const img = document.querySelector(`img[data-id="${id}"]`);
+    if (img) {
+      img.src = url;
+      img.style.opacity = '1';
+      img.style.display = '';
+      const fallback = img.nextElementSibling;
+      if (fallback && fallback.classList.contains('thumb-fallback')) fallback.style.display = 'none';
+    }
+  }
+
+  // Load asset thumbnails — patch DOM directly, no full re-render
+  for (let i = 0; i < assets.length; i += BATCH) {
+    const batch = assets.slice(i, i + BATCH);
+    const ids = batch.map(it => it.id).join(',');
+    const url = `https://thumbnails.roblox.com/v1/assets?assetIds=${ids}&returnPolicy=PlaceHolder&size=420x420&format=Png`;
+    const data = await apiFetch(url);
+    if (data && data.data) {
+      data.data.forEach(t => {
+        if (t.imageUrl && !t.imageUrl.includes('placeholder')) {
+          const item = batch.find(b => b.id === t.targetId);
+          if (item) { item.thumbnailUrl = t.imageUrl; patchImage(item.id, t.imageUrl); }
+        }
+      });
+    }
+  }
+
+  // Load bundle thumbnails — same patch approach
+  for (let i = 0; i < bundles.length; i += BATCH) {
+    const batch = bundles.slice(i, i + BATCH);
+    const ids = batch.map(it => it.id).join(',');
+    const url = `https://thumbnails.roblox.com/v1/bundles/thumbnails?bundleIds=${ids}&size=420x420&format=Png`;
+    const data = await apiFetch(url);
+    if (data && data.data) {
+      data.data.forEach(t => {
+        if (t.imageUrl) {
+          const item = batch.find(b => b.id === t.targetId);
+          if (item) { item.thumbnailUrl = t.imageUrl; patchImage(item.id, t.imageUrl); }
+        }
+      });
+    }
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function showResults(items) {
+  const grid = document.getElementById('results-grid');
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">😕</div><div class="empty-title">No results</div><div class="empty-desc">Try a different search or type</div></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(item => item.skeleton ? skeletonCard() : assetCard(item)).join('');
+}
+
+function assetCard(item) {
+  const isFav = !!favorites[item.id];
+  const thumbUrl = item.thumbnailUrl || `https://tr.rbxcdn.com/${item.id}/420/420/Image/Png`;
+  const emoji = TYPE_EMOJI[item.type] || '📦';
+  return `
+    <div class="card" id="card-${item.id}">
+      <div class="card-thumb">
+        <img src="${item.thumbnailUrl || ''}" alt="${escHtml(item.name)}" data-id="${item.id}" style="opacity:${item.thumbnailUrl ? 1 : 0}; transition: opacity 0.4s; display:${item.thumbnailUrl ? '' : 'none'}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="thumb-fallback" style="display:none">${emoji}</div>
+        <span class="type-pill type-${item.type}">${item.type}</span>
+        <button class="fav-star-btn ${isFav ? 'active' : ''}"
+          onclick="toggleFav(${item.id}, '${escHtml(item.name)}', '${item.type}', '${escHtml(thumbUrl)}')"
+          title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+          ${isFav ? '★' : '☆'}
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${escHtml(item.name)}</div>
+        <div class="card-id-row">
+          <span class="id-label">ID</span>
+          <span class="id-value" title="${item.id}">${item.id}</span>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn btn-copy" id="copy-${item.id}" onclick="copyId(${item.id})">Copy ID</button>
+        <button class="action-btn btn-open" onclick="openCatalog(${item.id}, '${item.type}')" title="Open in Roblox">↗</button>
+      </div>
+    </div>`;
+}
+
+function skeletonCard() {
+  return `
+    <div class="card">
+      <div class="card-thumb skeleton-box" style="aspect-ratio:1"></div>
+      <div class="card-body" style="padding: 10px 12px 14px">
+        <div class="skeleton-box" style="height:13px;margin-bottom:8px;border-radius:4px"></div>
+        <div class="skeleton-box" style="height:11px;width:70%;border-radius:4px"></div>
+      </div>
+    </div>`;
+}
+
+// ── Favorites ──────────────────────────────────────────────────────────────
+function toggleFav(id, name, type, thumbUrl) {
+  if (favorites[id]) {
+    delete favorites[id];
+    showToast('Removed from favorites');
+  } else {
+    favorites[id] = { id, name, type, thumbnailUrl: thumbUrl };
+    showToast('Saved to favorites ★');
+  }
+  localStorage.setItem('roblox_favorites', JSON.stringify(favorites));
+  updateFavBadge();
+  refreshFavStar(id);
+  if (activeTab === 'favorites') renderFavorites();
+}
+
+function refreshFavStar(id) {
+  const btn = document.querySelector(`#card-${id} .fav-star-btn`);
+  if (!btn) return;
+  const isFav = !!favorites[id];
+  btn.className = `fav-star-btn ${isFav ? 'active' : ''}`;
+  btn.innerHTML = isFav ? '★' : '☆';
+  btn.title = isFav ? 'Remove from favorites' : 'Add to favorites';
+}
+
+function renderFavorites() {
+  const favs = Object.values(favorites);
+  const grid = document.getElementById('fav-grid');
+  const header = document.getElementById('fav-header');
+  header.innerHTML = `<span>${favs.length}</span> saved asset${favs.length !== 1 ? 's' : ''}`;
+  if (favs.length === 0) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">★</div><div class="empty-title">No favorites yet</div><div class="empty-desc">Click the star on any asset to save it here</div></div>`;
+    return;
+  }
+  grid.innerHTML = favs.map(item => assetCard(item)).join('');
+}
+
+function updateFavBadge() {
+  const count = Object.keys(favorites).length;
+  const badge = document.getElementById('fav-badge');
+  if (count > 0) {
+    badge.style.display = 'inline-block';
+    badge.textContent = count;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Copy / Open ────────────────────────────────────────────────────────────
+function copyId(id) {
+  navigator.clipboard.writeText(String(id)).then(() => {
+    const btn = document.getElementById(`copy-${id}`);
+    if (btn) {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy ID';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+    showToast(`ID ${id} copied`);
+  }).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = String(id);
+    document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    showToast(`ID ${id} copied`);
+  });
+}
+
+function openCatalog(id, type) {
+  const url = type === 'bundles'
+    ? `https://www.roblox.com/bundles/${id}`
+    : `https://www.roblox.com/catalog/${id}`;
+  window.open(url, '_blank');
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('panel-search').style.display    = tab === 'search'    ? '' : 'none';
+  document.getElementById('panel-favorites').style.display = tab === 'favorites' ? '' : 'none';
+  document.getElementById('tab-search').classList.toggle('active',    tab === 'search');
+  document.getElementById('tab-favorites').classList.toggle('active', tab === 'favorites');
+  if (tab === 'favorites') renderFavorites();
+}
+
+function setType(type, btn) {
+  activeType = type;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setStatus(state, text = '') {
+  const bar  = document.getElementById('status-bar');
+  const dot  = document.getElementById('status-dot');
+  const span = document.getElementById('status-text');
+  bar.style.display = '';
+  dot.className = 'status-dot ' + (state === 'searching' ? 'idle' : state === 'live' ? 'live' : 'fallback');
+  span.textContent = state === 'searching' ? 'Searching...' : text;
+}
+
+let noticeVisible = false;
+function showNotice() {
+  if (!noticeVisible) {
+    document.getElementById('notice').style.display = '';
+    noticeVisible = true;
+  }
+}
+function toggleNotice() {
+  document.getElementById('notice').style.display = 'none';
+  noticeVisible = false;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+updateFavBadge();
+document.getElementById('search-input').focus();
+</script>
+</body>
+</html>
