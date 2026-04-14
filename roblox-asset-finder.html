@@ -699,6 +699,7 @@ function assetCard(item) {
       <div class="card-actions">
         <button class="action-btn btn-copy" id="copy-${item.id}" onclick="copyId(${item.id}, this)">Copy ID</button>
         <button class="action-btn btn-copy" id="copylink-${item.id}" onclick="copyLink(${item.id}, '${item.type}', this)">Copy Link</button>
+        <button class="action-btn btn-open" onclick="downloadPng(${item.id}, '${escHtml(item.name)}', this)" title="Download PNG">⬇</button>
         <button class="action-btn btn-open" onclick="openCatalog(${item.id}, '${item.type}')" title="Open in Roblox">↗</button>
       </div>
     </div>`;
@@ -763,6 +764,20 @@ function updateFavBadge() {
 }
 
 // ── Copy / Open ────────────────────────────────────────────────────────────
+function downloadPng(id, name, btn) {
+  const img = document.querySelector(`img[data-id="${id}"]`);
+  if (!img || !img.src || img.style.display === 'none') {
+    showToast('Thumbnail not loaded yet');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = `${String(name).replace(/[^a-z0-9]/gi, '_')}_${id}.png`;
+  a.target = '_blank';
+  a.click();
+  showToast('Downloading...');
+}
+
 function copyLink(id, type, btn) {
   const url = type === 'bundles'
     ? `https://www.roblox.com/bundles/${id}`
